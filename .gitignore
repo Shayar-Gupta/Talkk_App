@@ -10,4 +10,13 @@
 .externalNativeBuild
 .cxx
 /app/src/main/res/values/strings.xml
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+output.json
+*.jks
+*.keystore
 app/google-services.json
+*.hprof
