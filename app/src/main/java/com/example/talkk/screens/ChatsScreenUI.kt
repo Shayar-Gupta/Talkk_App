@@ -106,6 +106,10 @@ fun ChatsScreenUI(
         mutableStateOf<Bitmap?>(null)
     }
 
+    var isUploading by remember {
+        mutableStateOf(false)
+    }
+
     Scaffold(floatingActionButton = {
         FloatingActionButton(
             onClick = { viewModel.showDialog() },
@@ -145,7 +149,12 @@ fun ChatsScreenUI(
                 uri = imgUri,
                 hideDialog = { imgUri = null },
                 upload = {
-
+                    isUploading = true
+                    viewModel.uploadImage(if(it != null) it else imgUri!!){
+                        viewModel.uploadStory(it)
+                        isUploading = false
+                    }
+                    imgUri = null
                 }
             )
         }

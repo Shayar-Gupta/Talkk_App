@@ -2,6 +2,7 @@ package com.example.talkk
 
 import android.content.ContentValues
 import android.icu.util.Calendar
+import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,12 +16,14 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.toObject
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 
 class ChatViewModel : ViewModel() {
 
@@ -104,8 +107,7 @@ class ChatViewModel : ViewModel() {
                 Filter.and(
                     Filter.equalTo("user1.email", srEmail),
                     Filter.equalTo("user2.email", state.value.userData?.userEmail)
-                ),
-                Filter.and(
+                ), Filter.and(
                     Filter.equalTo("user1.email", state.value.userData?.userEmail),
                     Filter.equalTo("user2.email", srEmail)
                 )
@@ -147,8 +149,7 @@ class ChatViewModel : ViewModel() {
     fun showChats(userId: String) {
         chatListener = Firebase.firestore.collection(CHATS_COLLECTIONS).where(
             Filter.or(
-                Filter.equalTo("user1.userId", userId),
-                Filter.equalTo("user2.userId", userId)
+                Filter.equalTo("user1.userId", userId), Filter.equalTo("user2.userId", userId)
             )
         ).addSnapshotListener { value, error ->
             if (value != null) {
@@ -225,5 +226,39 @@ class ChatViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    fun uploadImage(img: Uri, callback: (String) -> Unit) {
+        var storageRef = Firebase.storage.reference
+        val imageRef = storageRef.child("$IMAGE_COLLECTIONS/${System.currentTimeMillis()}")
+        imageRef.putFile(img).addOnSuccessListener {
+            imageRef.downloadUrl.addOnSuccessListener {
+                var url = it.toString()
+                callback(url)
+            }.addOnFailureListener {
+                callback("")
+            }
+        }.addOnFailureListener {
+            callback("")
+        }.addOnSuccessListener {
+
+        }
+    }
+
+    fun uploadStory(url: String) {
+        val image = Image(
+            imgUrl = url,
+            time = Timestamp(Calendar.getInstance().time)
+        )
+
+        val id = firestore.collection(STORIES_COLLECTIONS).document().id
+        val story = Story(
+            id = id,
+            userId = state.value.userData?.userId.toString(),
+            userName = state.value.userData?.userName,
+            ppUrl = state.value.userData?.ppUrl.toString(),
+            images = listOf(image)
+        )
+        firestore.collection(STORIES_COLLECTIONS).document(id).set(story)
     }
 }

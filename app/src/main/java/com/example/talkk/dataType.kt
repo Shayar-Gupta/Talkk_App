@@ -9,9 +9,9 @@ data class SignInResult(
 
 data class UserData(
     val userId: String = "",
-    val userName: String ?= "",
-    val ppUrl: String ?= "",
-    val userEmail: String ?= "",
+    val userName: String? = "",
+    val ppUrl: String? = "",
+    val userEmail: String? = "",
     val bio: String = "",
 )
 
@@ -22,7 +22,7 @@ data class AppState(
     val srEmail: String = "",
     val showDialog: Boolean = false,
     val chatId: String = "",
-    val User2: ChatUserData?= null
+    val User2: ChatUserData? = null
 )
 
 data class ChatData(
@@ -45,7 +45,7 @@ data class Message(
     val progress: String = "",
     val content: String = "",
     val time: Timestamp? = null,
-    val read : Boolean = false,
+    val read: Boolean = false,
     val forwarded: Boolean = false,
 )
 
@@ -65,4 +65,17 @@ data class ChatUserData(
     val email: String = "",
     val status: Boolean = false,
     val unread: Int = 0
+)
+
+data class Image(
+    val imgUrl: String = "",
+    var time: Timestamp? = Timestamp.now()
+)
+
+data class Story(
+    val id : String = "",
+    val userId : String = "",
+    val userName : String? = "",
+    val ppUrl : String = "",
+    val images : List<Image> = emptyList()
 )
