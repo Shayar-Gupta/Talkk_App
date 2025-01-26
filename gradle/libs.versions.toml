@@ -1,5 +1,6 @@
 [versions]
 agp = "8.5.2"
+androidImageCropper = "4.5.0"
 coilNetworkOkhttp = "3.0.4"
 kotlin = "2.0.20"
 coreKtx = "1.15.0"
@@ -19,6 +20,7 @@ firebaseFirestore = "25.1.1"
 firebaseStorageKtx = "21.0.1"
 
 [libraries]
+android-image-cropper = { module = "com.vanniktech:android-image-cropper", version.ref = "androidImageCropper" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }

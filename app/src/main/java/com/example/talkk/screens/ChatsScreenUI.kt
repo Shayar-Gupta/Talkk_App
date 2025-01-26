@@ -8,7 +8,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +29,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.rounded.Add
@@ -59,6 +59,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,11 +67,16 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.request.crossfade
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.example.talkk.AppState
 import com.example.talkk.ChatData
 import com.example.talkk.ChatUserData
 import com.example.talkk.ChatViewModel
 import com.example.talkk.R
+import com.example.talkk.Story
 import com.example.talkk.dialogs.CustomDialogBox
 import com.example.talkk.dialogs.StoryPreview
 import java.text.SimpleDateFormat
@@ -89,8 +95,7 @@ fun ChatsScreenUI(
     val selectedItem = remember { mutableStateListOf<String>() }
     val border = Brush.sweepGradient(
         listOf(
-            Color(0xFFA7e6FF),
-            Color(0xFFA7e6FF)
+            Color(0xFFA7e6FF), Color(0xFFA7e6FF)
         )
     )
 
@@ -110,17 +115,30 @@ fun ChatsScreenUI(
         mutableStateOf(false)
     }
 
-    Scaffold(floatingActionButton = {
-        FloatingActionButton(
-            onClick = { viewModel.showDialog() },
-            shape = RoundedCornerShape(50.dp),
-            containerColor = colorScheme.inversePrimary,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.AddComment, contentDescription = null, tint = Color.White
-            )
-        }
-    }) {
+    val lottieAnimationFile by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.upload))
+    val myStoryViewModel = viewModel.stories.filter {
+        it.userId == state.userData?.userId
+    }
+    val myStory = if (myStoryViewModel.isEmpty()) listOf(Story()) else myStoryViewModel
+
+    val stories = viewModel.stories.filter {
+        it.userId != state.userData?.userId
+    }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.showDialog() },
+                shape = RoundedCornerShape(50.dp),
+                containerColor = colorScheme.inversePrimary,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.AddComment,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+            }
+        }) {
         it
         AnimatedVisibility(visible = state.showDialog) {
             CustomDialogBox(state = state,
@@ -145,18 +163,14 @@ fun ChatsScreenUI(
                 bitmap = ImageDecoder.decodeBitmap(src)
 
             }
-            StoryPreview(
-                uri = imgUri,
-                hideDialog = { imgUri = null },
-                upload = {
-                    isUploading = true
-                    viewModel.uploadImage(if(it != null) it else imgUri!!){
-                        viewModel.uploadStory(it)
-                        isUploading = false
-                    }
-                    imgUri = null
+            StoryPreview(uri = imgUri, hideDialog = { imgUri = null }, upload = {
+                isUploading = true
+                viewModel.uploadImage(if (it != null) it else imgUri!!) {
+                    viewModel.uploadStory(it)
+                    isUploading = false
                 }
-            )
+                imgUri = null
+            })
         }
 
         Column(
@@ -170,9 +184,11 @@ fun ChatsScreenUI(
                 ) {
                     Column {
                         Text(
-                            text = "Hello", modifier = Modifier
+                            text = "Hello",
+                            modifier = Modifier
                                 .padding(start = 16.dp)
-                                .offset(y = 5.dp), style = MaterialTheme.typography.titleSmall
+                                .offset(y = 5.dp),
+                            style = MaterialTheme.typography.titleSmall
                         )
                         Text(
                             text = state.userData?.userName.toString(),
@@ -219,51 +235,145 @@ fun ChatsScreenUI(
             }
 
             Spacer(modifier = Modifier.width(4.dp))
+
             LazyRow(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(start = 10.dp, top = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
-                    Box(
-                        modifier = Modifier
-                            .padding(bottom = 20.dp, start = 5.dp, end = 5.dp)
-                            .size(70.dp)
-                            .drawWithCache {
-                                onDrawBehind {
-                                    drawCircle(
-                                        brush = border,
-                                        style = Stroke(
-                                            width = 8f, pathEffect = PathEffect.dashPathEffect(
-                                                floatArrayOf(
-                                                    (35.dp.toPx() * 2 * Math.PI.toFloat() / 5) - 15f,
-                                                    15f
-                                                ), 0f
+                    if (isUploading) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(5.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(77.dp)
+                                    .padding(3.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(state.userData?.ppUrl).crossfade(true)
+                                        .allowHardware(false).build(),
+                                    contentDescription = null,
+                                    placeholder = painterResource(id = R.drawable.person_placeholder_4),
+                                    error = painterResource(id = R.drawable.person_placeholder_4),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .fillMaxSize()
+                                )
+
+                                LottieAnimation(
+                                    composition = lottieAnimationFile,
+                                    iterations = LottieConstants.IterateForever,
+                                    modifier = Modifier.background(
+                                        Color.Black.copy(alpha = .5f), CircleShape
+                                    )
+                                )
+                            }
+
+                            Text(
+                                text = "uploading...",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Light,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    if (myStory[0].userId.isNotEmpty() && !isUploading) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(77.dp)
+                                    .padding(3.dp), contentAlignment = Alignment.BottomEnd
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(myStory[0].ppUrl).crossfade(true).allowHardware(false)
+                                        .build(),
+                                    contentDescription = null,
+                                    placeholder = painterResource(id = R.drawable.person_placeholder_4),
+                                    error = painterResource(id = R.drawable.person_placeholder_4),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .fillMaxSize()
+                                )
+
+                                Icon(
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .clickable {
+
+                                        },
+                                    imageVector = Icons.Filled.AddCircle,
+                                    contentDescription = null
+                                )
+                            }
+
+
+                            Text(
+                                text = "Your Story...",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Light,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+
+
+                        }
+                    }
+
+                    if (myStory[0].userId.isEmpty() && !isUploading) {
+                        Box(
+                            modifier = Modifier
+                                .padding(bottom = 20.dp, start = 5.dp, end = 5.dp)
+                                .size(70.dp)
+                                .drawWithCache {
+                                    onDrawBehind {
+                                        drawCircle(
+                                            brush = border, style = Stroke(
+                                                width = 8f,
+                                                pathEffect = PathEffect.dashPathEffect(
+                                                    floatArrayOf(
+                                                        (35.dp.toPx() * 2 * Math.PI.toFloat() / 5) - 15f,
+                                                        15f
+                                                    ), 0f
+                                                )
                                             )
                                         )
-                                    )
+                                    }
                                 }
-                            }
-                            .padding(5.dp)
-                            .background(
-                                colorScheme.background.copy(
-                                ), CircleShape
+                                .padding(5.dp)
+                                .background(
+                                    colorScheme.background.copy(
+                                    ), CircleShape
+                                )
+                                .clickable {
+                                    launcher.launch("image/*")
+                                }, contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = null,
+                                tint = colorScheme.onBackground.copy(alpha = .8f),
+                                modifier = Modifier.size(40.dp)
                             )
-                            .clickable {
-                                launcher.launch("image/*")
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Add,
-                            contentDescription = null,
-                            tint = colorScheme.onBackground.copy(alpha = .8f),
-                            modifier = Modifier.size(40.dp)
-                        )
+                        }
                     }
                 }
-
             }
+
             LazyColumn(
                 modifier = Modifier
                     .padding(top = padding)
@@ -289,38 +399,33 @@ fun ChatsScreenUI(
                     val chatUser =
                         if (it.user1?.userId != state.userData?.userId) it.user1 else it.user2
 
-                    ChatItems(
-                        state = state,
+                    ChatItems(state = state,
                         userData = chatUser!!,
                         chat = it,
                         isSelected = selectedItem.contains(it.chatId),
-                        showSingleChat = { user, id -> showSingleChat(user, id) }
-                    )
+                        showSingleChat = { user, id -> showSingleChat(user, id) })
                 }
             }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+
 @Composable
 fun ChatItems(
     state: AppState, userData: ChatUserData, chat: ChatData,
     //mode: Boolean,
-    isSelected: Boolean,
-    showSingleChat: (ChatUserData, String) -> Unit
+    isSelected: Boolean, showSingleChat: (ChatUserData, String) -> Unit
 ) {
     val formatter = remember { SimpleDateFormat(("hh:mm a"), Locale.getDefault()) }
     val color = if (!isSelected) Color.Transparent else colorScheme.onPrimary
 
-    Row(
-        modifier = Modifier
-            .background(color = color)
-            .fillMaxWidth()
-            .clickable { showSingleChat(userData, chat.chatId) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier
+        .background(color = color)
+        .fillMaxWidth()
+        .clickable { showSingleChat(userData, chat.chatId) }
+        .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current).data(userData.ppUrl).crossfade(true)
                 .allowHardware(false).build(),

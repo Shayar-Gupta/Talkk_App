@@ -58,7 +58,8 @@ dependencies {
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.coil.network.okhttp)
     implementation(libs.coil.compose)
-    implementation("com.vanniktech:android-image-cropper:4.5.0")
+    implementation(libs.android.image.cropper)
+    implementation("com.airbnb.android:lottie-compose:6.0.0")
 
 
     implementation(libs.androidx.core.ktx)

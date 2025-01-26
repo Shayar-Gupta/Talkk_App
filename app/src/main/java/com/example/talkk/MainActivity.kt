@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
                                     if (userData != null) {
                                         viewModel.getUserDataFromFireStore(userData.userId)
                                         viewModel.showChats(userData.userId)
+                                        viewModel.popStory(userData.userId)
                                         navController.navigate(ChatsScreen)
                                     } else navController.navigate(SignInScreen)
                                 }
@@ -92,6 +93,7 @@ class MainActivity : ComponentActivity() {
                                         viewModel.addUserDataToFireStore(userData)
                                         viewModel.getUserDataFromFireStore(userData.userId)
                                         viewModel.showChats(userData.userId)
+                                        viewModel.popStory(userData.userId)
                                         navController.navigate(ChatsScreen)
                                     }
                                 }

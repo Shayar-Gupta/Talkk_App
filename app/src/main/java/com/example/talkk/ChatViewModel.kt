@@ -15,6 +15,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.toObject
+import com.google.firebase.firestore.toObjects
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrl
 
 class ChatViewModel : ViewModel() {
 
@@ -39,7 +39,8 @@ class ChatViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
     var msgListener: ListenerRegistration? = null
     var messages by mutableStateOf<List<Message>>(listOf())
-
+    var storyListener: ListenerRegistration? = null
+    var stories by mutableStateOf<List<Story>>(emptyList())
     fun resetState() {
 
     }
@@ -260,5 +261,38 @@ class ChatViewModel : ViewModel() {
             images = listOf(image)
         )
         firestore.collection(STORIES_COLLECTIONS).document(id).set(story)
+    }
+
+    fun popStory(currUserId: String) {
+        viewModelScope.launch {
+            val storyCollection = firestore.collection(STORIES_COLLECTIONS)
+            val users = arrayListOf(state.value.userData?.userId)
+            firestore.collection(CHATS_COLLECTIONS).where(
+                Filter.or(
+                    Filter.equalTo("user1.userId", currUserId),
+                    Filter.equalTo("user2.userId", currUserId)
+                )
+            ).addSnapshotListener { snp, err ->
+                if (snp != null) {
+                    snp.toObjects<ChatData>().forEach {
+                        val otherUserId =
+                            if (it.user1?.userId == currUserId) it.user2?.userId.toString() else it.user1?.userId.toString()
+                        users.add(otherUserId)
+                    }
+                    users.add(currUserId)
+                    storyListener = storyCollection.whereIn("userId", users)
+                        .addSnapshotListener { storySnapShot, error ->
+                            if(storySnapShot != null){
+                                stories = storySnapShot.documents.mapNotNull {
+                                    it.toObject<Story>()
+                                }
+                            }
+                        }
+
+                }
+
+            }
+
+        }
     }
 }
